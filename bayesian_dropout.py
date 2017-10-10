@@ -1,7 +1,7 @@
 import tensorflow as tf
 import math
 
-def bernoulli_dropout(incoming, keep_prob, scale_during_training = True, mc = tf.constant(False), name="BernoulliDropout"):
+def bernoulli_dropout(incoming, keep_prob, mc, scale_during_training = True, name="BernoulliDropout"):
 	""" Bernoulli Dropout.
 	Outputs the input element multiplied by a random variable sampled from a Bernoulli distribution with either mean keep_prob (scale_during_training False) or mean 1 (scale_during_training True)
 	Arguments:
@@ -37,7 +37,7 @@ def bernoulli_dropout(incoming, keep_prob, scale_during_training = True, mc = tf
 		inference = tf.cond(mc, apply_bernoulli_dropout, lambda: expectation)
 	return inference
 
-def gaussian_dropout(incoming, keep_prob, scale_during_training = True, mc = tf.constant(False), name="GaussianDropout"):
+def gaussian_dropout(incoming, keep_prob, mc, scale_during_training = True, name="GaussianDropout"):
 	""" Gaussian Dropout.
 	Outputs the input element multiplied by a random variable sampled from a Gaussian distribution with mean 1 and either variance keep_prob*(1-keep_prob) (scale_during_training False) or (1-keep_prob)/keep_prob (scale_during_training True)
 	Arguments:
@@ -68,5 +68,36 @@ def gaussian_dropout(incoming, keep_prob, scale_during_training = True, mc = tf.
 			return tf.mul(inference,tf.random_normal(tf.shape(inference), mean = 1, stddev = stddev))
 		
 		inference = tf.cond(mc, apply_gaussian_dropout, lambda: inference)
+
+	return inference
+
+def gaussian_conv2d(incoming,filter,strides,padding,std_param,mc,use_cudnn_on_gpu=None,data_format=None,name=None):
+
+	""" Gaussian Connections.
+	Outputs the input element multiplied by a random variable sampled from a Gaussian distribution with mean 1 and variance that depends on the input receptive field
+	Arguments:
+		incoming : A `Tensor`. The incoming tensor.
+		std_param : A float used to set the variance of the Gaussian random mask.
+		mc : A boolean Tensor correponding to whether or not Monte-Carlo sampling will be used to calculate the networks output
+		name : A name for this layer (optional).
+	References:
+		Dropout: A Simple Way to Prevent Neural Networks from Overfitting.
+		N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever & R. Salakhutdinov,
+		(2014), Journal of Machine Learning Research, 5(Jun)(2), 1929-1958.
+	Links:
+	  [https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf]
+		(https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf)
+	"""
+
+	with tf.name_scope(name) as scope:
+
+		mean = tf.conv2d(incoming,filter,strides,padding,use_cudnn_on_gpu,data_format,name)
+		
+		def apply_gaussian_conv2d():
+			std = tf.sqrt(tf.conv2d(tf.multiplty(incoming,incoming),tf.multiplty(filter,filter),strides,padding,use_cudnn_on_gpu,data_format,name))
+			noise = tf.random_normal(tf.shape(mean), mean = 0, stddev = std_param)
+			return mean + std * noise 
+		
+		inference = tf.cond(mc, apply_gaussian_conv2d, lambda: mean)
 
 	return inference
