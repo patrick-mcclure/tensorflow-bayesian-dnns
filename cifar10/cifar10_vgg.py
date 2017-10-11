@@ -62,6 +62,9 @@ parser.add_argument('--use_fp16', type=bool, default=False,
 parser.add_argument('--method', type=str, default='none',
                     help='The weight sampling method used during training.')
 
+parser.add_argument('--learning_rate', type=float, default=0.05
+                    help='The initial learning rate.')
+
 
 FLAGS = parser.parse_args()
 
@@ -76,7 +79,7 @@ NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 NUM_EPOCHS_PER_DECAY = 500.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 0.05      # Initial learning rate.
+INITIAL_LEARNING_RATE = FLAGS.learning_rate      # Initial learning rate.
 
 # If a model is trained with multiple GPUs, prefix all Op names with tower_name
 # to differentiate the operations. Note that this prefix is removed from the
