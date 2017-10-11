@@ -57,6 +57,9 @@ parser.add_argument('--log_device_placement', type=bool, default=False,
 parser.add_argument('--log_frequency', type=int, default=10,
                     help='How often to log results to the console.')
 
+parser.add_argument('--method', type=str, default='none',
+                    help='The weight sampling method used during training.')
+
 
 def train():
   """Train CIFAR-10 for a number of steps."""
