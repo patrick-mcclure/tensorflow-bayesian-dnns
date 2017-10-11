@@ -102,3 +102,5 @@ def grid_conv2d(incoming,filter,strides,keep_prob,mc,padding,use_cudnn_on_gpu=No
 		inference = tf.cond(mc, apply_gaussian_conv2d, lambda: mean)
 
 	return inference
+
+print('Bayesian dropout functions have been loaded.')
