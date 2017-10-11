@@ -62,7 +62,7 @@ parser.add_argument('--use_fp16', type=bool, default=False,
 parser.add_argument('--method', type=str, default='none',
                     help='The weight sampling method used during training.')
 
-parser.add_argument('--learning_rate', type=float, default=0.05
+parser.add_argument('--learning_rate', type=float, default=0.05,
                     help='The initial learning rate.')
 
 
