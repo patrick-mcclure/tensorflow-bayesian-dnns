@@ -112,8 +112,8 @@ def _variable(name, shape, initializer):
   Returns:
     Variable Tensor
   """
-    dtype = tf.float16 if FLAGS.use_fp16 else tf.float32
-    var = tf.get_variable(name, shape, initializer=initializer, dtype=dtype)
+  dtype = tf.float16 if FLAGS.use_fp16 else tf.float32
+  var = tf.get_variable(name, shape, initializer=initializer, dtype=dtype)
   return var
 
 
