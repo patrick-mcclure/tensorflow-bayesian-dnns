@@ -200,7 +200,7 @@ def conv2drelu(h_in,in_filters,out_filters,weight_decay,method,keep_prob,mc,name
       kernel = gaussian_dropout(kernel,keep_prob,mc)
       biases = gaussian_dropout(biases,keep_prob,mc)
     if method == 'grid':
-      conv = grid_conv2d(h_in, kernel, [1, 1, 1, 1], padding='SAME', keep_prob, mc)      
+      conv = grid_conv2d(h_in, kernel, [1, 1, 1, 1], keep_prob, mc, padding='SAME')      
     else:
       conv = tf.nn.conv2d(h_in, kernel, [1, 1, 1, 1], padding='SAME')
     pre_activation = tf.nn.bias_add(conv, biases)

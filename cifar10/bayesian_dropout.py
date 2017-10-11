@@ -71,7 +71,7 @@ def gaussian_dropout(incoming, keep_prob, mc, scale_during_training = True, name
 
 	return inference
 
-def grid_conv2d(incoming,filter,strides,padding,keep_prob,mc,use_cudnn_on_gpu=None,data_format=None,name=None):
+def grid_conv2d(incoming,filter,strides,keep_prob,mc,padding,use_cudnn_on_gpu=None,data_format=None,name=None):
 
 	""" Gaussian Random Independent Dropconnect 2D Convolution.
 	Outputs the input element multiplied by a random variable sampled from a Gaussian distribution with mean 1 and variance that depends on the input receptive field
