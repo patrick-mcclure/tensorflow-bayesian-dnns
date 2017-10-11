@@ -283,7 +283,7 @@ def inference(images, mc):
                                           stddev=1/192.0, wd=0.0)
     biases = _variable('biases', [NUM_CLASSES],
                               tf.constant_initializer(0.0))
-    softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
+    softmax_linear = tf.add(tf.matmul(linear1, weights), biases, name=scope.name)
     _activation_summary(softmax_linear)
 
   return softmax_linear
