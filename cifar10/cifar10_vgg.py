@@ -65,7 +65,7 @@ parser.add_argument('--method', type=str, default='none',
 parser.add_argument('--learning_rate', type=float, default=0.05,
                     help='The initial learning rate.')
 
-parser.add_argument('--keep_prob', type=float, default=0.3,
+parser.add_argument('--keep_prob', type=float, default=0.7,
                     help='The initial learning rate.')
 
 
