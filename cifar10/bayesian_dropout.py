@@ -91,11 +91,11 @@ def grid_conv2d(incoming,filter,strides,keep_prob,mc,padding,use_cudnn_on_gpu=No
 
 	with tf.name_scope(name) as scope:
 
-		mean = tf.conv2d(incoming,filter,strides,padding,use_cudnn_on_gpu,data_format,name)
+		mean = tf.nn.conv2d(incoming,filter,strides,padding,use_cudnn_on_gpu,data_format,name)
 		
 		def apply_gaussian_conv2d():
 			stddev = math.sqrt((1-keep_prob)/keep_prob)
-			std = tf.sqrt(tf.conv2d(tf.multiplty(incoming,incoming),tf.multiplty(filter,filter),strides,padding,use_cudnn_on_gpu,data_format,name))
+			std = tf.sqrt(tf.nn.conv2d(tf.multiplty(incoming,incoming),tf.multiplty(filter,filter),strides,padding,use_cudnn_on_gpu,data_format,name))
 			noise = tf.random_normal(tf.shape(mean), mean = 0, stddev = stddev)
 			return mean + std * noise 
 		
