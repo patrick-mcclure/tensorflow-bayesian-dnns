@@ -43,6 +43,7 @@ import tarfile
 
 from six.moves import urllib
 import tensorflow as tf
+import bayesian_dropout
 
 import cifar10_input
 
@@ -209,7 +210,7 @@ def conv2drelu(h_in,in_filters,out_filters,weight_decay,method,keep_prob,mc,name
     _activation_summary(h_out)
     return h_out
 
-def inference(images):
+def inference(images, mc):
   """Build the CIFAR-10 model.
 
   Args:
@@ -227,8 +228,6 @@ def inference(images):
   weight_decay = 5e-4
   method = 'none'
   keep_prob = 0.3
-
-  mc = tf.placeholder(tf.bool)
 
   conv1 = conv2drelu(images,3,64,weight_decay,method,keep_prob,mc,'conv1')
   conv2 = conv2drelu(conv1,64,64,weight_decay,method,keep_prob,mc,'conv2')
