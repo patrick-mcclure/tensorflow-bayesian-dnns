@@ -65,7 +65,7 @@ def gaussian_dropout(incoming, keep_prob, mc, scale_during_training = True, name
 			stddev = math.sqrt((1-keep_prob)*keep_prob)
 
 		def apply_gaussian_dropout():
-			return tf.mul(inference,tf.random_normal(tf.shape(inference), mean = 1, stddev = stddev))
+			return tf.multiply(inference,tf.random_normal(tf.shape(inference), mean = 1, stddev = stddev))
 		
 		inference = tf.cond(mc, apply_gaussian_dropout, lambda: inference)
 
