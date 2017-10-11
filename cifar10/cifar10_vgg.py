@@ -65,6 +65,9 @@ parser.add_argument('--method', type=str, default='none',
 parser.add_argument('--learning_rate', type=float, default=0.05,
                     help='The initial learning rate.')
 
+parser.add_argument('--keep_prob', type=float, default=0.3,
+                    help='The initial learning rate.')
+
 
 FLAGS = parser.parse_args()
 
@@ -234,7 +237,7 @@ def inference(images, mc):
   # conv1
   weight_decay = 5e-4
   method = FLAGS.method
-  keep_prob = 0.3
+  keep_prob = FLAGS.keep_prob
 
   conv1 = conv2drelu(images,3,64,weight_decay,method,keep_prob,mc,'conv1')
   conv2 = conv2drelu(conv1,64,64,weight_decay,method,keep_prob,mc,'conv2')
