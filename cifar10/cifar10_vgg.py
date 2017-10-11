@@ -43,7 +43,7 @@ import tarfile
 
 from six.moves import urllib
 import tensorflow as tf
-import bayesian_dropout
+from bayesian_dropout import *
 
 import cifar10_input
 
