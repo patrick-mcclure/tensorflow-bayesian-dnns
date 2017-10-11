@@ -127,7 +127,7 @@ def _variable(name, shape, initializer):
   return var
 
 
-def _variable_with_weight_decay(name, shape, stddev, wd):
+def _variable_with_weight_decay(name, shape, wd):
   """Helper to create an initialized Variable with weight decay.
 
   Note that the Variable is initialized with a truncated normal distribution.
@@ -147,7 +147,7 @@ def _variable_with_weight_decay(name, shape, stddev, wd):
   var = _variable(
       name,
       shape,
-      tf.truncated_normal_initializer(stddev=stddev, dtype=dtype))
+      tf.contrib.layers.xavier_initializer())
   if wd is not None:
     weight_decay = tf.multiply(tf.nn.l2_loss(var), wd, name='weight_loss')
     tf.add_to_collection('losses', weight_decay)
@@ -203,7 +203,6 @@ def conv2drelu(h_in,in_filters,out_filters,weight_decay,method,keep_prob,mc,name
   with tf.variable_scope(name) as scope:
     kernel = _variable_with_weight_decay('weights',
                                          shape=[3, 3, in_filters, out_filters],
-                                         stddev=5e-2,
                                          wd=weight_decay)
     biases = _variable('biases', [out_filters], tf.constant_initializer(0.0))
     if method == 'gdc':
@@ -269,7 +268,7 @@ def inference(images, mc):
     reshape = tf.reshape(pool5, [FLAGS.batch_size, -1])
     dim = reshape.get_shape()[1].value
     weights = _variable_with_weight_decay('weights', shape=[dim, 384],
-                                          stddev=0.04, wd=0.004)
+                                          wd=0.004)
     biases = _variable('biases', [384], tf.constant_initializer(0.1))
     
     if method == 'gdc' or method == 'grid':
@@ -290,7 +289,7 @@ def inference(images, mc):
   # and performs the softmax internally for efficiency.
   with tf.variable_scope('softmax_linear') as scope:
     weights = _variable_with_weight_decay('weights', [384, NUM_CLASSES],
-                                          stddev=1/384.0, wd=0.0)
+                                          wd=0.0)
     biases = _variable('biases', [NUM_CLASSES],
                               tf.constant_initializer(0.0))
     softmax_linear = tf.add(tf.matmul(linear1, weights), biases, name=scope.name)
