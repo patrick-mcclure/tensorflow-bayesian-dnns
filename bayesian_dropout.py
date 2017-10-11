@@ -1,7 +1,7 @@
 import tensorflow as tf
 import math
 
-def bernoulli_dropout(incoming, keep_prob, mc, scale_during_training = True, name="BernoulliDropout"):
+def bernoulli_dropout(incoming, keep_prob, mc, scale_during_training = True, name=None):
 	""" Bernoulli Dropout.
 	Outputs the input element multiplied by a random variable sampled from a Bernoulli distribution with either mean keep_prob (scale_during_training False) or mean 1 (scale_during_training True)
 	Arguments:
@@ -37,7 +37,7 @@ def bernoulli_dropout(incoming, keep_prob, mc, scale_during_training = True, nam
 		inference = tf.cond(mc, apply_bernoulli_dropout, lambda: expectation)
 	return inference
 
-def gaussian_dropout(incoming, keep_prob, mc, scale_during_training = True, name="GaussianDropout"):
+def gaussian_dropout(incoming, keep_prob, mc, scale_during_training = True, name=None):
 	""" Gaussian Dropout.
 	Outputs the input element multiplied by a random variable sampled from a Gaussian distribution with mean 1 and either variance keep_prob*(1-keep_prob) (scale_during_training False) or (1-keep_prob)/keep_prob (scale_during_training True)
 	Arguments:
@@ -71,9 +71,9 @@ def gaussian_dropout(incoming, keep_prob, mc, scale_during_training = True, name
 
 	return inference
 
-def gaussian_conv2d(incoming,filter,strides,padding,std_param,mc,use_cudnn_on_gpu=None,data_format=None,name=None):
+def grid_conv2d(incoming,filter,strides,padding,keep_prob,mc,use_cudnn_on_gpu=None,data_format=None,name=None):
 
-	""" Gaussian Connections.
+	""" Gaussian Random Independent Dropconnect 2D Convolution.
 	Outputs the input element multiplied by a random variable sampled from a Gaussian distribution with mean 1 and variance that depends on the input receptive field
 	Arguments:
 		incoming : A `Tensor`. The incoming tensor.
@@ -94,8 +94,9 @@ def gaussian_conv2d(incoming,filter,strides,padding,std_param,mc,use_cudnn_on_gp
 		mean = tf.conv2d(incoming,filter,strides,padding,use_cudnn_on_gpu,data_format,name)
 		
 		def apply_gaussian_conv2d():
+			stddev = math.sqrt((1-keep_prob)/keep_prob)
 			std = tf.sqrt(tf.conv2d(tf.multiplty(incoming,incoming),tf.multiplty(filter,filter),strides,padding,use_cudnn_on_gpu,data_format,name))
-			noise = tf.random_normal(tf.shape(mean), mean = 0, stddev = std_param)
+			noise = tf.random_normal(tf.shape(mean), mean = 0, stddev = stddev)
 			return mean + std * noise 
 		
 		inference = tf.cond(mc, apply_gaussian_conv2d, lambda: mean)
