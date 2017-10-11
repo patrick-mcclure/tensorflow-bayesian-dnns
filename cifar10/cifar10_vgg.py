@@ -59,6 +59,10 @@ parser.add_argument('--data_dir', type=str, default='/tmp/cifar10_data',
 parser.add_argument('--use_fp16', type=bool, default=False,
                     help='Train the model using fp16.')
 
+parser.add_argument('--method', type=str, default='none',
+                    help='The weight sampling method used during training.')
+
+
 FLAGS = parser.parse_args()
 
 # Global constants describing the CIFAR-10 data set.
