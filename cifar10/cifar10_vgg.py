@@ -68,6 +68,17 @@ parser.add_argument('--learning_rate', type=float, default=0.05,
 parser.add_argument('--keep_prob', type=float, default=0.7,
                     help='The initial learning rate.')
 
+parser.add_argument('--train_dir', type=str, default='/tmp/cifar10_train',
+                    help='Directory where to write event logs and checkpoint.')
+
+parser.add_argument('--max_steps', type=int, default=1000000,
+                    help='Number of batches to run.')
+
+parser.add_argument('--log_device_placement', type=bool, default=False,
+                    help='Whether to log device placement.')
+
+parser.add_argument('--log_frequency', type=int, default=10,
+                    help='How often to log results to the console.')
 
 FLAGS = parser.parse_args()
 

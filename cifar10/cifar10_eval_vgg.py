@@ -64,18 +64,6 @@ parser.add_argument('--num_examples', type=int, default=10000,
 parser.add_argument('--run_once', type=bool, default=False,
                     help='Whether to run eval only once.')
 
-parser.add_argument('--train_dir', type=str, default='/tmp/cifar10_train',
-                    help='Directory where to write event logs and checkpoint.')
-
-parser.add_argument('--max_steps', type=int, default=1000000,
-                    help='Number of batches to run.')
-
-parser.add_argument('--log_device_placement', type=bool, default=False,
-                    help='Whether to log device placement.')
-
-parser.add_argument('--log_frequency', type=int, default=10,
-                    help='How often to log results to the console.')
-
 
 def eval_once(saver, summary_writer, top_k_op, summary_op):
   """Run Eval once.
