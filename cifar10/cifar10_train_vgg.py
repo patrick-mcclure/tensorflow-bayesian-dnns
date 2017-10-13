@@ -58,7 +58,7 @@ def train():
       mc = tf.placeholder(tf.bool)
       images_initializer = tf.placeholder(tf.float32, shape=[FLAGS.batch_size, 24, 24, 3])
       images = tf.Variable(images_initializer, trainable=False, collections=[])
-      labels_initializer = tf.placeholder(tf.float32, shape=[FLAGS.batch_size,1])
+      labels_initializer = tf.placeholder(tf.float32, shape=[FLAGS.batch_size])
       labels = tf.Variable(labels_initializer, trainable=False, collections=[])
     # Build a Graph that computes the logits predictions from the
     # inference model.
