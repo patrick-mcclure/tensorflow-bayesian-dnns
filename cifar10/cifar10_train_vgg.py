@@ -54,8 +54,12 @@ def train():
     # Force input pipeline to CPU:0 to avoid operations sometimes ending up on
     # GPU and resulting in a slow down.
     with tf.device('/cpu:0'):
-      images, labels = cifar10.distorted_inputs()
+      new_images, new_labels = cifar10.distorted_inputs()
       mc = tf.placeholder(tf.bool)
+      images_initializer = tf.placeholder(tf.float32, shape=[FLAGS.batch_size, 24, 24, 3])
+      images = tf.Variable(images_initializer, trainable=False, collections=[])
+      labels_initializer = tf.placeholder(tf.float32, shape=[FLAGS.batch_size,1])
+      labels = tf.Variable(labels_initializer, trainable=False, collections=[])
     # Build a Graph that computes the logits predictions from the
     # inference model.
     logits = cifar10.inference(images,mc)
@@ -101,6 +105,8 @@ def train():
         config=tf.ConfigProto(
             log_device_placement=FLAGS.log_device_placement)) as mon_sess:
       while not mon_sess.should_stop():
+        x, y = mon_sess.run([new_images, new_labels])
+        mon_sess.run([images.initializer, labels.initializer], feed_dict = {images_initializer:x, labels_initializer:y})
         mon_sess.run(train_op)
 
 
