@@ -104,7 +104,7 @@ def train():
                _LoggerHook()],
         config=tf.ConfigProto(
             log_device_placement=FLAGS.log_device_placement)) as mon_sess:
-      paartial_run_flg = True
+      partial_run_flg = True
       while not mon_sess.should_stop():
         if partial_run_flg:
           hdle = mon_sess.partial_run_setup([new_images,new_labels], [])
