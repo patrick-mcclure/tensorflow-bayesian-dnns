@@ -102,7 +102,6 @@ def train():
                _LoggerHook()],
         config=tf.ConfigProto(
             log_device_placement=FLAGS.log_device_placement)) as mon_sess:
-      mon_sess.run(tf.global_variables_initializer())
       while not mon_sess.should_stop():
         x, y = mon_sess.run([new_images, new_labels])
         mon_sess.run([images.initializer, labels.initializer], feed_dict = {images_initializer:x, labels_initializer:y})
