@@ -56,10 +56,8 @@ def train():
     with tf.device('/cpu:0'):
       new_images, new_labels = cifar10.distorted_inputs()
       mc = tf.placeholder(tf.bool)
-      images_initializer = tf.zeros(shape=[FLAGS.batch_size, 24, 24, 3], dtype = tf.float32)
-      images = tf.Variable(images_initializer, trainable=False, collections=[], name = 'images')
-      labels_initializer = tf.zeros(shape=[FLAGS.batch_size], dtype = tf.float32)
-      labels = tf.Variable(labels_initializer, trainable=False, collections=[], name = 'labels')
+      images = tf.Variable(tf.zeros(shape=[FLAGS.batch_size, 24, 24, 3], dtype = tf.float32), trainable=False, collections=[], name = 'images')
+      labels = tf.Variable(tf.zeros(shape=[FLAGS.batch_size], dtype = tf.float32), trainable=False, collections=[], name = 'labels')
     # Build a Graph that computes the logits predictions from the
     # inference model.
     logits = cifar10.inference(images,mc)
@@ -104,6 +102,7 @@ def train():
                _LoggerHook()],
         config=tf.ConfigProto(
             log_device_placement=FLAGS.log_device_placement)) as mon_sess:
+      mon_sess.run(tf.global_variables_initializer())
       while not mon_sess.should_stop():
         x, y = mon_sess.run([new_images, new_labels])
         mon_sess.run([images.initializer, labels.initializer], feed_dict = {images_initializer:x, labels_initializer:y})
