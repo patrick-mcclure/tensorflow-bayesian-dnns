@@ -38,7 +38,7 @@ from __future__ import print_function
 
 from datetime import datetime
 import time
-
+import numpy as np
 import tensorflow as tf
 
 import cifar10_vgg as cifar10
@@ -56,10 +56,8 @@ def train():
     with tf.device('/cpu:0'):
       new_images, new_labels = cifar10.distorted_inputs()
       mc = tf.placeholder(tf.bool)
-      images_initializer = tf.placeholder(tf.float32, shape=[FLAGS.batch_size, 24, 24, 3])
-      images = tf.Variable(images_initializer, trainable=False, collections=[])
-      labels_initializer = tf.placeholder(tf.float32, shape=[FLAGS.batch_size])
-      labels = tf.Variable(labels_initializer, trainable=False, collections=[])
+      images = tf.placeholder(tf.float32, shape=[FLAGS.batch_size, 24, 24, 3])
+      labels = tf.placeholder(tf.int32, shape=[FLAGS.batch_size])
     # Build a Graph that computes the logits predictions from the
     # inference model.
     logits = cifar10.inference(images,mc)
@@ -105,9 +103,8 @@ def train():
         config=tf.ConfigProto(
             log_device_placement=FLAGS.log_device_placement)) as mon_sess:
       while not mon_sess.should_stop():
-        x, y = mon_sess.run([new_images, new_labels])
-        mon_sess.run([images.initializer, labels.initializer], feed_dict = {images_initializer:x, labels_initializer:y})
-        mon_sess.run(train_op)
+        x, y = mon_sess.run([new_images, new_labels], feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size])})
+        mon_sess.run(train_op, feed_dict = {images:x, labels:y})
 
 
 def main(argv=None):  # pylint: disable=unused-argument
