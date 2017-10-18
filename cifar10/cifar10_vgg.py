@@ -80,6 +80,9 @@ parser.add_argument('--log_device_placement', type=bool, default=False,
 parser.add_argument('--log_frequency', type=int, default=10,
                     help='How often to log results to the console.')
 
+parser.add_argument('-f', type=str, default='default',
+                    help='Meaningless flag introducted for Jupyter compatbility.')
+
 FLAGS = parser.parse_args()
 
 # Global constants describing the CIFAR-10 data set.
