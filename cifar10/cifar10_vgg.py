@@ -83,6 +83,25 @@ parser.add_argument('--log_frequency', type=int, default=10,
 parser.add_argument('-f', type=str, default='default',
                     help='Meaningless flag introducted for Jupyter compatbility.')
 
+# Evaluataion arguements
+parser.add_argument('--eval_dir', type=str, default='/tmp/cifar10_eval',
+                    help='Directory where to write event logs.')
+
+parser.add_argument('--eval_data', type=str, default='test',
+                    help='Either `test` or `train_eval`.')
+
+parser.add_argument('--checkpoint_dir', type=str, default='/tmp/cifar10_train',
+                    help='Directory where to read model checkpoints.')
+
+parser.add_argument('--eval_interval_secs', type=int, default=60*5,
+                    help='How often to run the eval.')
+
+parser.add_argument('--num_examples', type=int, default=10000,
+                    help='Number of examples to run.')
+
+parser.add_argument('--run_once', type=bool, default=True,
+                    help='Whether to run eval only once.')
+
 FLAGS = parser.parse_args()
 
 # Global constants describing the CIFAR-10 data set.
