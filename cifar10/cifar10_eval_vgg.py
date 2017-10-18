@@ -98,6 +98,8 @@ def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels,
       num_iter = int(math.ceil(FLAGS.num_examples / FLAGS.batch_size))
       true_count = 0  # Counts the number of correct predictions.
       mc_true_count = 0
+      avg_nll = 0
+      mc_avg_nll = 0
       total_sample_count = num_iter * FLAGS.batch_size
       step = 0
       while step < num_iter and not coord.should_stop():
@@ -115,18 +117,26 @@ def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels,
 
         true_count += np.sum(predictions)
         mc_true_count += np.sum(mc_predictions)
+        avg_nll += nll
+        mc_avg_nll += mc_nll
         step += 1
 
       # Compute precision @ 1.
       precision = true_count / total_sample_count
       mc_precision = mc_true_count / total_sample_count
-      print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
-      print('%s: mc precision @ 1 = %.3f' % (datetime.now(), mc_precision))
+      avg_nll = avg_nll / total_sample_count
+      mc_avg_nll = mc_avg_nll / total_sample_count
+      print('%s: Accuracy = %.3f' % (datetime.now(), precision))
+      print('%s: Loss = %.3f' % (datetime.now(), avg_nll))
+      print('%s: MC Accuracy = %.3f' % (datetime.now(), mc_precision))
+      print('%s: MC Cross Entropy = %.3f' % (datetime.now(), mc_avg_nll))
 
       summary = tf.Summary()
       summary.ParseFromString(sess.run(summary_op,feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size])}))
-      summary.value.add(tag='Precision @ 1', simple_value=precision)
-      summary.value.add(tag='MC Precision @ 1', simple_value=mc_precision)
+      summary.value.add(tag='Accuracy', simple_value=precision)
+      summary.value.add(tag='Loss', simple_value=avg_nll)
+      summary.value.add(tag='MC Accuracy', simple_value=mc_precision)
+      summary.value.add(tag='MC Loss', simple_value=mc_avg_nll)
       summary_writer.add_summary(summary, global_step)
     except Exception as e:  # pylint: disable=broad-except
       coord.request_stop(e)
