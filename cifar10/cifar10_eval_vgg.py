@@ -85,7 +85,7 @@ def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels,
       total_sample_count = num_iter * FLAGS.batch_size
       step = 0
       while step < num_iter and not coord.should_stop():
-        x, y = sess.run([new_images, new_labels], feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size])})
+        x, y = sess.run([new_images, new_labels], feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), mc:False, labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size])})
 
         predictions, nll = sess.run([top_k_op,loss], feed_dict = {images: x, labels:y, mc:False})
         
@@ -114,7 +114,7 @@ def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels,
       print('%s: MC Cross Entropy = %.3f' % (datetime.now(), mc_avg_nll))
 
       summary = tf.Summary()
-      summary.ParseFromString(sess.run(summary_op,feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size])}))
+      summary.ParseFromString(sess.run(summary_op,feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size]), mc:True}))
       summary.value.add(tag='Accuracy', simple_value=precision)
       summary.value.add(tag='Loss', simple_value=avg_nll)
       summary.value.add(tag='MC Accuracy', simple_value=mc_precision)

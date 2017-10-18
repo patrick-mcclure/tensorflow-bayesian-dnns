@@ -54,16 +54,14 @@ def train():
     # Force input pipeline to CPU:0 to avoid operations sometimes ending up on
     # GPU and resulting in a slow down.
     with tf.device('/cpu:0'):
-      new_images, new_labels = cifar10.distorted_inputs()
+      images, labels = cifar10.distorted_inputs()
       mc = tf.placeholder(tf.bool)
-      images = tf.placeholder(tf.float32, shape=[FLAGS.batch_size, 24, 24, 3])
-      labels = tf.placeholder(tf.int32, shape=[FLAGS.batch_size])
     # Build a Graph that computes the logits predictions from the
     # inference model.
     logits = cifar10.inference(images,mc)
 
     # Calculate loss.
-    loss = cifar10.loss(logits, labels)
+    loss, cross_entropy = cifar10.loss(logits, labels)
 
     # Build a Graph that trains the model with one batch of examples and
     # updates the model parameters.
