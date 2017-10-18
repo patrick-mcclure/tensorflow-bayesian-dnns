@@ -61,11 +61,11 @@ parser.add_argument('--eval_interval_secs', type=int, default=60*5,
 parser.add_argument('--num_examples', type=int, default=10000,
                     help='Number of examples to run.')
 
-parser.add_argument('--run_once', type=bool, default=False,
+parser.add_argument('--run_once', type=bool, default=True,
                     help='Whether to run eval only once.')
 
 
-def eval_once(saver, summary_writer, top_k_op, summary_op):
+def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels, probabilities, top_k_op, mc_top_k_op, mc_probs, mc_loss, loss, summary_op):
   """Run Eval once.
 
   Args:
@@ -97,20 +97,36 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
 
       num_iter = int(math.ceil(FLAGS.num_examples / FLAGS.batch_size))
       true_count = 0  # Counts the number of correct predictions.
+      mc_true_count = 0
       total_sample_count = num_iter * FLAGS.batch_size
       step = 0
       while step < num_iter and not coord.should_stop():
-        predictions = sess.run([top_k_op], feed_dict = {mc:False})
+        x, y = sess.run([new_images, new_labels], feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size])})
+
+        predictions, nll = sess.run([top_k_op,loss], feed_dict = {images: x, labels:y, mc:False})
+        
+        for n in range(10):
+          if n == 0:
+            p = sess.run(probabilities, feed_dict = {images: x, labels:y, mc:True, mc_probs: np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,10])})
+          else:
+            p = p + sess.run(probabilities, feed_dict = {images: x, labels:y, mc:True, mc_probs: np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,10])})
+        p = p / 10
+        mc_predictions, mc_nll = sess.run([mc_top_k_op, mc_loss], feed_dict = {images: x, labels:y, mc:True, mc_probs: p})
+
         true_count += np.sum(predictions)
+        mc_true_count += np.sum(mc_predictions)
         step += 1
 
       # Compute precision @ 1.
       precision = true_count / total_sample_count
+      mc_precision = mc_true_count / total_sample_count
       print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
+      print('%s: mc precision @ 1 = %.3f' % (datetime.now(), mc_precision))
 
       summary = tf.Summary()
-      summary.ParseFromString(sess.run(summary_op))
+      summary.ParseFromString(sess.run(summary_op,feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size])}))
       summary.value.add(tag='Precision @ 1', simple_value=precision)
+      summary.value.add(tag='MC Precision @ 1', simple_value=mc_precision)
       summary_writer.add_summary(summary, global_step)
     except Exception as e:  # pylint: disable=broad-except
       coord.request_stop(e)
@@ -124,14 +140,21 @@ def evaluate():
   with tf.Graph().as_default() as g:
     # Get images and labels for CIFAR-10.
     eval_data = FLAGS.eval_data == 'test'
-    images, labels = cifar10.inputs(eval_data=eval_data)
-
+    new_images, new_labels = cifar10.inputs(eval_data=eval_data)
+    mc = tf.placeholder(tf.bool)
+    images = tf.placeholder(tf.float32, shape=[FLAGS.batch_size, 24, 24, 3])
+    labels = tf.placeholder(tf.int32, shape=[FLAGS.batch_size])
+    mc_probs = tf.placeholder(tf.float32, shape=[FLAGS.batch_size, 10])
     # Build a Graph that computes the logits predictions from the
     # inference model.
-    logits = cifar10.inference(images)
+    logits = cifar10.inference(images,mc)
+    probabilities = tf.nn.softmax(logits)
+    loss = cifar10.loss(logits, labels)
+    mc_loss = tf.reduce_mean(-tf.reduce_sum(tf.one_hot(labels,10) * tf.log(mc_probs), reduction_indices=[1]))
 
     # Calculate predictions.
     top_k_op = tf.nn.in_top_k(logits, labels, 1)
+    mc_top_k_op = tf.nn.in_top_k(mc_probs, labels, 1)
 
     # Restore the moving average version of the learned variables for eval.
     variable_averages = tf.train.ExponentialMovingAverage(
@@ -145,7 +168,7 @@ def evaluate():
     summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, g)
 
     while True:
-      eval_once(saver, summary_writer, top_k_op, summary_op)
+      eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels, probabilities, top_k_op, mc_top_k_op, mc_probs, mc_loss, loss, summary_op)
       if FLAGS.run_once:
         break
       time.sleep(FLAGS.eval_interval_secs)
