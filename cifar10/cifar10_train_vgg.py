@@ -101,8 +101,7 @@ def train():
         config=tf.ConfigProto(
             log_device_placement=FLAGS.log_device_placement)) as mon_sess:
       while not mon_sess.should_stop():
-        x, y = mon_sess.run([new_images, new_labels], feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size])})
-        mon_sess.run(train_op, feed_dict = {images:x, labels:y})
+        mon_sess.run(train_op)
 
 
 def main(argv=None):  # pylint: disable=unused-argument
