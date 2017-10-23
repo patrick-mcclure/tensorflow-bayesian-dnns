@@ -99,6 +99,9 @@ parser.add_argument('--eval_interval_secs', type=int, default=60*5,
 parser.add_argument('--num_examples', type=int, default=10000,
                     help='Number of examples to run.')
 
+parser.add_argument('--mc_n', type=int, default=10,
+                    help='Number of MC samples.')
+
 parser.add_argument('--run_once', type=bool, default=True,
                     help='Whether to run eval only once.')
 
@@ -238,7 +241,7 @@ def conv2drelu(h_in,in_filters,out_filters,weight_decay,method,keep_prob,mc,name
                                          shape=[3, 3, in_filters, out_filters],
                                          wd=weight_decay)
     biases = _variable('biases', [out_filters], tf.constant_initializer(0.0))
-    if method == 'gdc':
+    if method == 'gdc' or method == 'gdgd':
       kernel = gaussian_dropout(kernel,keep_prob,mc)
       biases = gaussian_dropout(biases,keep_prob,mc)
     if method == 'grid':
@@ -246,7 +249,7 @@ def conv2drelu(h_in,in_filters,out_filters,weight_decay,method,keep_prob,mc,name
     else:
       conv = tf.nn.conv2d(h_in, kernel, [1, 1, 1, 1], padding='SAME')
     pre_activation = tf.nn.bias_add(conv, biases)
-    if method == 'gdo':
+    if method == 'gdo' or method == 'gdgd':
       pre_activation = gaussian_dropout(pre_activation,keep_prob,mc)
     h_out = tf.nn.relu(pre_activation, name=scope.name)
     _activation_summary(h_out)
@@ -304,13 +307,13 @@ def inference(images, mc):
                                           wd=0.004)
     biases = _variable('biases', [384], tf.constant_initializer(0.1))
     
-    if method == 'gdc' or method == 'grid':
+    if method == 'gdc' or method == 'grid' or method == 'gdgd':
       weights = gaussian_dropout(weights,keep_prob, mc)
       biases = gaussian_dropout(biases,keep_prob, mc)
     
     pre_activation = tf.matmul(reshape, weights) + biases
 
-    if method == 'gdo':
+    if method == 'gdo' or method == 'gdgd':
       pre_activation = gaussian_dropout(pre_activation,keep_prob,mc)
 
     linear1 = tf.nn.relu(pre_activation, name=scope.name)

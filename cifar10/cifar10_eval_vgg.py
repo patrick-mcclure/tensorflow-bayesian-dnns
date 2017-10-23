@@ -60,6 +60,7 @@ def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels,
     ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
       # Restores from checkpoint
+      print(ckpt.model_checkpoint_path)
       saver.restore(sess, ckpt.model_checkpoint_path)
       # Assuming model_checkpoint_path looks something like:
       #   /my-favorite-path/cifar10_train/model.ckpt-0,
@@ -89,12 +90,12 @@ def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels,
 
         predictions, nll = sess.run([top_k_op,loss], feed_dict = {images: x, labels:y, mc:False})
         
-        for n in range(10):
+        for n in range(FLAGS.mc_n):
           if n == 0:
             p = sess.run(probabilities, feed_dict = {images: x, labels:y, mc:True, mc_probs: np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,10])})
           else:
             p = p + sess.run(probabilities, feed_dict = {images: x, labels:y, mc:True, mc_probs: np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,10])})
-        p = p / 10
+        p = p / FLAGS.mc_n
         mc_predictions, mc_nll = sess.run([mc_top_k_op, mc_loss], feed_dict = {images: x, labels:y, mc:True, mc_probs: p})
 
         true_count += np.sum(predictions)
