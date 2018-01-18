@@ -241,13 +241,18 @@ def conv2drelu(h_in,in_filters,out_filters,weight_decay,method,keep_prob,mc,name
     if method == 'gdc':
       kernel = gaussian_dropout(kernel,keep_prob,mc)
       biases = gaussian_dropout(biases,keep_prob,mc)
-    if method == 'grid':
+    elif method == 'bdc':
+      kernel = bernoulli_dropout(kernel,keep_prob,mc)
+      biases = bernoulli_dropout(biases,keep_prob,mc)
+    elif method == 'grid':
       conv = grid_conv2d(h_in, kernel, [1, 1, 1, 1], keep_prob, mc, padding='SAME')      
     else:
       conv = tf.nn.conv2d(h_in, kernel, [1, 1, 1, 1], padding='SAME')
     pre_activation = tf.nn.bias_add(conv, biases)
     if method == 'gdo':
       pre_activation = gaussian_dropout(pre_activation,keep_prob,mc)
+    elif method == 'bdo':
+      pre_activation = bernoulli_dropout(pre_activation,keep_prob,mc)
     h_out = tf.nn.relu(pre_activation, name=scope.name)
     _activation_summary(h_out)
     return h_out
