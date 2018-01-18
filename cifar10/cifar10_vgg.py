@@ -315,11 +315,18 @@ def inference(images, mc):
     if method == 'gdc' or method == 'grid':
       weights = gaussian_dropout(weights,keep_prob, mc)
       biases = gaussian_dropout(biases,keep_prob, mc)
+      
+    if method == 'bdc':
+      weights = bernoulli_dropout(weights,keep_prob, mc)
+      biases = bernoulli_dropout(biases,keep_prob, mc)
     
     pre_activation = tf.matmul(reshape, weights) + biases
 
     if method == 'gdo':
       pre_activation = gaussian_dropout(pre_activation,keep_prob,mc)
+      
+    if method == 'bdo':
+      pre_activation = bernoulli_dropout(pre_activation,keep_prob,mc)
 
     linear1 = tf.nn.relu(pre_activation, name=scope.name)
     _activation_summary(linear1)
@@ -333,6 +340,14 @@ def inference(images, mc):
                                           wd=0.0)
     biases = _variable('biases', [NUM_CLASSES],
                               tf.constant_initializer(0.0))
+    if method == 'gdc' or method == 'grid':
+      weights = gaussian_dropout(weights,keep_prob, mc)
+      biases = gaussian_dropout(biases,keep_prob, mc)
+      
+    if method == 'bdc':
+      weights = bernoulli_dropout(weights,keep_prob, mc)
+      biases = bernoulli_dropout(biases,keep_prob, mc)
+    
     softmax_linear = tf.add(tf.matmul(linear1, weights), biases, name=scope.name)
     _activation_summary(softmax_linear)
 
