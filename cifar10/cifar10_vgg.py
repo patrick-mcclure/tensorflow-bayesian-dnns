@@ -99,6 +99,9 @@ parser.add_argument('--eval_interval_secs', type=int, default=60*5,
 parser.add_argument('--num_examples', type=int, default=10000,
                     help='Number of examples to run.')
 
+parser.add_argument('--num_samples', type=int, default=10,
+                    help='Number of mc samples.')
+
 parser.add_argument('--run_once', type=bool, default=True,
                     help='Whether to run eval only once.')
 
