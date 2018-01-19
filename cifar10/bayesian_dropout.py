@@ -74,19 +74,14 @@ def gaussian_dropout(incoming, keep_prob, mc, scale_during_training = True, name
 def grid_conv2d(incoming,filter,strides,keep_prob,mc,padding,use_cudnn_on_gpu=None,data_format=None,name=None):
 
 	""" Gaussian Random Independent Dropconnect 2D Convolution.
-	Outputs the input element multiplied by a random variable sampled from a Gaussian distribution with mean 1 and variance that depends on the input receptive field
+	Performs 2D convolution on the input with each weight being multiplied by an indepedent random variable sampled from a Gaussian distribution with mean 1 and variance for each receptive field
 	Arguments:
 		incoming : A `Tensor`. The incoming tensor.
-		std_param : A float used to set the variance of the Gaussian random mask.
+		keep_prob : A float used to set the variance of the Gaussian random mask.
 		mc : A boolean Tensor correponding to whether or not Monte-Carlo sampling will be used to calculate the networks output
 		name : A name for this layer (optional).
 	References:
-		Dropout: A Simple Way to Prevent Neural Networks from Overfitting.
-		N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever & R. Salakhutdinov,
-		(2014), Journal of Machine Learning Research, 5(Jun)(2), 1929-1958.
 	Links:
-	  [https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf]
-		(https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf)
 	"""
 
 	with tf.name_scope(name) as scope:
