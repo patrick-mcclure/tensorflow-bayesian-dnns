@@ -42,12 +42,12 @@ import numpy as np
 import tensorflow as tf
 import bayesian_dropout
 
-import cifar10_vgg as cifar10
+import cifar10_valid_vgg as cifar10
 
 parser = cifar10.parser
 
 
-def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels, probabilities, top_k_op, mc_top_k_op, mc_probs, mc_loss, loss, cross_entropy, summary_op):
+def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels, probabilities, top_k_op, mc_top_k_op, mc_probs, mc_loss, loss, summary_op):
   """Run Eval once.
 
   Args:
@@ -60,7 +60,6 @@ def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels,
     ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
       # Restores from checkpoint
-      print(ckpt.model_checkpoint_path)
       saver.restore(sess, ckpt.model_checkpoint_path)
       # Assuming model_checkpoint_path looks something like:
       #   /my-favorite-path/cifar10_train/model.ckpt-0,
@@ -88,14 +87,14 @@ def eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels,
       while step < num_iter and not coord.should_stop():
         x, y = sess.run([new_images, new_labels], feed_dict = {images:np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,24,24,3]), mc:False, labels:np.zeros(dtype=np.int32,shape=[FLAGS.batch_size])})
 
-        predictions, nll = sess.run([top_k_op,cross_entropy], feed_dict = {images: x, labels:y, mc:False})
+        predictions, nll = sess.run([top_k_op,loss], feed_dict = {images: x, labels:y, mc:False})
         
-        for n in range(FLAGS.mc_n):
+        for n in range(10):
           if n == 0:
             p = sess.run(probabilities, feed_dict = {images: x, labels:y, mc:True, mc_probs: np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,10])})
           else:
             p = p + sess.run(probabilities, feed_dict = {images: x, labels:y, mc:True, mc_probs: np.zeros(dtype=np.float32,shape=[FLAGS.batch_size,10])})
-        p = p / FLAGS.mc_n
+        p = p / 10
         mc_predictions, mc_nll = sess.run([mc_top_k_op, mc_loss], feed_dict = {images: x, labels:y, mc:True, mc_probs: p})
 
         true_count += np.sum(predictions)
@@ -132,7 +131,6 @@ def evaluate():
   """Eval CIFAR-10 for a number of steps."""
   with tf.Graph().as_default() as g:
     # Get images and labels for CIFAR-10.
-    global_step = tf.contrib.framework.get_or_create_global_step()
     eval_data = FLAGS.eval_data == 'test'
     new_images, new_labels = cifar10.inputs(eval_data=eval_data)
     mc = tf.placeholder(tf.bool)
@@ -143,8 +141,8 @@ def evaluate():
     # inference model.
     logits = cifar10.inference(images,mc)
     probabilities = tf.nn.softmax(logits)
-    loss, cross_entropy = cifar10.loss(logits, labels, global_step)
-    mc_loss = tf.reduce_mean(-tf.reduce_sum(tf.one_hot(labels,10) * tf.log(mc_probs+1e-8), reduction_indices=[1]))
+    loss = cifar10.loss(logits, labels)
+    mc_loss = tf.reduce_mean(-tf.reduce_sum(tf.one_hot(labels,10) * tf.log(mc_probs), reduction_indices=[1]))
 
     # Calculate predictions.
     top_k_op = tf.nn.in_top_k(logits, labels, 1)
@@ -162,7 +160,7 @@ def evaluate():
     summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, g)
 
     while True:
-      eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels, probabilities, top_k_op, mc_top_k_op, mc_probs, mc_loss, loss, cross_entropy, summary_op)
+      eval_once(saver, summary_writer, mc, new_images, new_labels, images, labels, probabilities, top_k_op, mc_top_k_op, mc_probs, mc_loss, loss, summary_op)
       if FLAGS.run_once:
         break
       time.sleep(FLAGS.eval_interval_secs)

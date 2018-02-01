@@ -41,7 +41,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-import cifar10_vgg as cifar10
+import cifar10_valid_vgg as cifar10
 
 parser = cifar10.parser
 
@@ -61,11 +61,8 @@ def train():
     logits = cifar10.inference(images,mc)
 
     # Calculate loss.
-    loss, cross_entropy = cifar10.loss(logits, labels, global_step)
-    
-    # Calculate Predictions
-    top_k_op = tf.nn.in_top_k(logits, labels, 1)
-    
+    loss = cifar10.loss(logits, labels)
+
     # Build a Graph that trains the model with one batch of examples and
     # updates the model parameters.
     train_op = cifar10.train(loss, global_step)
@@ -79,7 +76,7 @@ def train():
 
       def before_run(self, run_context):
         self._step += 1
-        return tf.train.SessionRunArgs([loss, cross_entropy, top_k_op],feed_dict = {mc:True})  # Asks for loss value.
+        return tf.train.SessionRunArgs(loss,feed_dict = {mc:True})  # Asks for loss value.
 
       def after_run(self, run_context, run_values):
         if self._step % FLAGS.log_frequency == 0:
@@ -91,9 +88,9 @@ def train():
           examples_per_sec = FLAGS.log_frequency * FLAGS.batch_size / duration
           sec_per_batch = float(duration / FLAGS.log_frequency)
 
-          format_str = ('%s: step %d, loss = %.2f, cross_entropy = %.2f, accuracy = %.2f (%.1f examples/sec; %.3f '
+          format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
                         'sec/batch)')
-          print (format_str % (datetime.now(), self._step, loss_value[0], loss_value[1], np.sum(loss_value[2])/FLAGS.batch_size, 
+          print (format_str % (datetime.now(), self._step, loss_value,
                                examples_per_sec, sec_per_batch))
 
     with tf.train.MonitoredTrainingSession(

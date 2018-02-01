@@ -44,8 +44,7 @@ import tarfile
 from six.moves import urllib
 import tensorflow as tf
 from bayesian_dropout import *
-import variational_convolutional_wn as vc
-import variational_dropconnect_convolutional_wn as vdc
+import variational_convolutional as vc
 import cifar10_input
 
 parser = argparse.ArgumentParser()
@@ -63,8 +62,8 @@ parser.add_argument('--use_fp16', type=bool, default=False,
 parser.add_argument('--method', type=str, default='none',
                     help='The weight sampling method used during training.')
 
-parser.add_argument('--learning_rate', type=float, default=0.0001,
-                    help='The initial learning rate.') #WN  0.0001
+parser.add_argument('--learning_rate', type=float, default=0.05,
+                    help='The initial learning rate.')
 
 parser.add_argument('--keep_prob', type=float, default=0.7,
                     help='The initial learning rate.')
@@ -72,7 +71,7 @@ parser.add_argument('--keep_prob', type=float, default=0.7,
 parser.add_argument('--train_dir', type=str, default='/tmp/cifar10_train',
                     help='Directory where to write event logs and checkpoint.')
 
-parser.add_argument('--max_steps', type=int, default=200000,
+parser.add_argument('--max_steps', type=int, default=1000000,
                     help='Number of batches to run.')
 
 parser.add_argument('--log_device_placement', type=bool, default=False,
@@ -100,7 +99,7 @@ parser.add_argument('--eval_interval_secs', type=int, default=60*5,
 parser.add_argument('--num_examples', type=int, default=10000,
                     help='Number of examples to run.')
 
-parser.add_argument('--mc_n', type=int, default=100,
+parser.add_argument('--mc_n', type=int, default=10,
                     help='Number of MC samples.')
 
 parser.add_argument('--run_once', type=bool, default=True,
@@ -117,7 +116,7 @@ NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
 # Constants describing the training process.
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
-NUM_EPOCHS_PER_DECAY = 1000.0      # Epochs after which learning rate decays.
+NUM_EPOCHS_PER_DECAY = 500.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
 INITIAL_LEARNING_RATE = FLAGS.learning_rate      # Initial learning rate.
 
@@ -187,7 +186,7 @@ def _variable_with_weight_decay(name, shape, wd):
       tf.contrib.layers.xavier_initializer())
   if wd is not None:
     weight_decay = tf.multiply(tf.nn.l2_loss(var), wd, name='weight_loss')
-    #tf.add_to_collection('losses', weight_decay)
+    tf.add_to_collection('losses', weight_decay)
   return var
 
 
@@ -238,25 +237,20 @@ def inputs(eval_data):
 
 def conv2drelu(h_in,in_filters,out_filters,weight_decay,method,keep_prob,mc,name):
   with tf.variable_scope(name) as scope:
-    if FLAGS.method == 'vc':
-        pre_activation = vc.conv2d(h_in,out_filters,[3,3],padding='SAME')
-    elif FLAGS.method == 'vdc':
-        pre_activation = vdc.conv2d(h_in,out_filters,[3,3],padding='SAME')
-    else:
-        kernel = _variable_with_weight_decay('weights',
+    kernel = _variable_with_weight_decay('weights',
                                          shape=[3, 3, in_filters, out_filters],
                                          wd=weight_decay)
-        biases = _variable('biases', [out_filters], tf.constant_initializer(0.0))
-        if method == 'gdc' or method == 'gdgd':
-          kernel = gaussian_dropout(kernel,keep_prob,mc)
-          biases = gaussian_dropout(biases,keep_prob,mc)
-        elif method == 'grid':
-          conv = grid_conv2d(h_in, kernel, [1, 1, 1, 1], keep_prob, mc, padding='SAME')      
-        else:
-          conv = tf.nn.conv2d(h_in, kernel, [1, 1, 1, 1], padding='SAME')
-        pre_activation = tf.nn.bias_add(conv, biases)
-        if method == 'gdo' or method == 'gdgd':
-          pre_activation = gaussian_dropout(pre_activation,keep_prob,mc)
+    biases = _variable('biases', [out_filters], tf.constant_initializer(0.0))
+    if method == 'gdc' or method == 'gdgd':
+      kernel = gaussian_dropout(kernel,keep_prob,mc)
+      biases = gaussian_dropout(biases,keep_prob,mc)
+    if method == 'grid':
+      conv = grid_conv2d(h_in, kernel, [1, 1, 1, 1], keep_prob, mc, padding='SAME')      
+    else:
+      conv = tf.nn.conv2d(h_in, kernel, [1, 1, 1, 1], padding='SAME')
+    pre_activation = tf.nn.bias_add(conv, biases)
+    if method == 'gdo' or method == 'gdgd':
+      pre_activation = gaussian_dropout(pre_activation,keep_prob,mc)
     h_out = tf.nn.relu(pre_activation, name=scope.name)
     _activation_summary(h_out)
     return h_out
@@ -279,7 +273,7 @@ def inference(images, mc):
   weight_decay = 5e-4
   method = FLAGS.method
   keep_prob = FLAGS.keep_prob
-  print(images.dtype)
+
   conv1 = conv2drelu(images,3,64,weight_decay,method,keep_prob,mc,'conv1')
   conv2 = conv2drelu(conv1,64,64,weight_decay,method,keep_prob,mc,'conv2')
   pool1 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
@@ -340,7 +334,7 @@ def inference(images, mc):
   return softmax_linear
 
 
-def loss(logits, labels, global_step):
+def loss(logits, labels):
   """Add L2Loss to all the trainable variables.
 
   Add summary for "Loss" and "Loss/avg".
@@ -352,43 +346,16 @@ def loss(logits, labels, global_step):
   Returns:
     Loss tensor of type float.
   """
-
   # Calculate the average cross entropy loss across the batch.
   labels = tf.cast(labels, tf.int64)
   cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
       labels=labels, logits=logits, name='cross_entropy_per_example')
   cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
   tf.add_to_collection('losses', cross_entropy_mean)
-  print(FLAGS.max_steps)  
-  #lam = tf.maximum(tf.cast(global_step-10000,tf.float32), tf.zeros(())) / float(FLAGS.max_steps - 10000)
-  lam = tf.cast(global_step / FLAGS.max_steps,tf.float32)
-  if FLAGS.method == 'vc':
-    weight_decay = 1/(2*(1)**2)
-    l2_loss = tf.add_n([tf.reduce_sum((tf.square(v - tf.constant(0,dtype=tf.float32,shape=v.shape))* weight_decay)) for v in tf.get_collection('ms')], name = 'l2_loss')
-    tf.summary.scalar('l2_loss', l2_loss)
-       
-    sigma_squared_loss = tf.add_n([tf.reduce_sum(tf.square(v)) * weight_decay for v in tf.get_collection('sigmas')])
-    tf.summary.scalar('sigma_squared_loss', sigma_squared_loss)
 
-    log_sigma_loss = tf.add_n([tf.reduce_sum(v) for v in tf.global_variables() if "kernel_s" in v.name or "bias_s" in v.name],name='log_sigma_loss')
-    tf.summary.scalar('log_sigma_loss', log_sigma_loss)
-  if FLAGS.method == 'vdc':
-    print('HELP ME!')
-    weight_decay = 1/(2*(1)**2)
-    print([tf.reduce_sum((tf.square(v - tf.constant(0,dtype=tf.float32,shape=v.shape))* weight_decay)) for v in tf.get_collection('ms')]) 
-    l2_loss = tf.add_n([tf.reduce_sum((tf.square(v - tf.constant(0,dtype=tf.float32,shape=v.shape))* weight_decay)) for v in tf.get_collection('ms')], name = 'l2_loss')
-    tf.summary.scalar('l2_loss', l2_loss)
-    sigma_squared_loss = tf.add_n([tf.reduce_sum(tf.square(v)) * weight_decay for v in tf.get_collection('sigmas')],name = 'sigma_squared_loss')
-    tf.summary.scalar('sigma_squared_loss', sigma_squared_loss)
-
-    log_sigma_loss = tf.add_n([tf.reduce_sum(tf.abs(v)) for v in tf.get_collection('sigmas')],name='log_sigma_loss')
-    tf.summary.scalar('log_sigma_loss', log_sigma_loss)
-  kl_loss = tf.multiply(l2_loss + sigma_squared_loss - log_sigma_loss, 1 / NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN, name = 'kl_loss') #* lam
-  tf.add_to_collection('losses',kl_loss)
-  print(tf.get_collection('losses'))   
   # The total loss is defined as the cross entropy loss plus all of the weight
   # decay terms (L2 loss).
-  return tf.add_n(tf.get_collection('losses'), name='total_loss'), cross_entropy_mean
+  return tf.add_n(tf.get_collection('losses'), name='total_loss')
 
 
 def _add_loss_summaries(total_loss):
@@ -448,7 +415,7 @@ def train(total_loss, global_step):
 
   # Compute gradients.
   with tf.control_dependencies([loss_averages_op]):
-    opt = tf.train.MomentumOptimizer(lr,0.9)
+    opt = tf.train.GradientDescentOptimizer(lr)
     grads = opt.compute_gradients(total_loss)
 
   # Apply gradients.
